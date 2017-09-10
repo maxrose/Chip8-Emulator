@@ -91,6 +91,7 @@ final class Emulator {
     }
 
     static let memoryCapacity: Int = 4096
+    static let reservedSpace: Int = 352
     private(set) var memory = [MemoryType](repeating:0, count: memoryCapacity)
     static let registerCount: Int = 16
     private(set) var registers = [MemoryType](repeating:0, count: registerCount)
@@ -204,6 +205,11 @@ final class Emulator {
         self.reset()
         let contents = [MemoryType](program)
 
+        guard contents.count <= Emulator.memoryCapacity - Emulator.programCounterStart - Emulator.reservedSpace else {
+            print("Rom too large.")
+            return
+        }
+
         self.memory.replaceSubrange(Emulator.programCounterStart..<Emulator.programCounterStart + contents.count, with: contents)
     }
 
@@ -230,19 +236,20 @@ final class Emulator {
         switch hexDigits {
         case (0, _, 0xE, Opcode.clearScreen):
             pixelData = [Bool](repeating: false, count: Emulator.pixelWidth * Emulator.pixelHeight)
+            self.needsDraw = true
 
         case (0, _, 0xE, Opcode.returnFromSubroutine):
             sp -= 1
             pc = stack[sp]
 
         case (Opcode.gotoAddress, _, _, _):
-            pc = p2 | p3 | p4
+            pc = Address(p2 | p3 | p4)
             incrementProgramCounter = false
 
         case (Opcode.callSubroutine, _, _, _):
             stack[sp] = pc
             sp += 1
-            pc = p2 | p3 | p4
+            pc = Address(p2 | p3 | p4)
             incrementProgramCounter = false
 
         case (Opcode.skipEqual, let x, _, _):
@@ -264,7 +271,8 @@ final class Emulator {
             V[x] = MemoryType(p3 | p4)
 
         case (Opcode.addConstant, let x, _, _):
-            V[x] += MemoryType(p3 | p4)
+            let (value, _) = MemoryType.addWithOverflow(V[x], MemoryType(p3 | p4))
+            V[x] = value
 
         case (Opcode.variableMath, let x, let y, let operation):
             switch operation {
@@ -282,17 +290,18 @@ final class Emulator {
                 V[x] = value
             case Opcode.subtract:
                 let (value, overflow) = MemoryType.subtractWithOverflow(V[x], V[y])
-                V[0xF] = overflow ? 1 : 0
+                V[0xF] = overflow ? 0 : 1
                 V[x] = value
             case Opcode.shiftRight:
                 V[0xF] = V[x] & 0xF
                 V[x] >>= 1
             case Opcode.addNegative:
                 // Track overflow
-                V[0xF] = V[x] > V[y] ? 1 : 0
-                V[x] = V[y] - V[x]
+                let (value, overflow) = MemoryType.subtractWithOverflow(V[y], V[x])
+                V[0xF] = overflow ? 0 : 1
+                V[x] = value
             case Opcode.shiftLeft:
-                V[0xF] = V[x] & 0xF0
+                V[0xF] = V[x] >> 7
                 V[x] <<= 1
 
             default:
@@ -305,7 +314,7 @@ final class Emulator {
             }
 
         case (Opcode.setIndexRegister, _, _, _):
-            I = p2 | p3 | p4
+            I = Address(p2 | p3 | p4)
 
         case (Opcode.jumpAhead, _, _, _):
             pc = Address(V[0]) + Address(p2 | p3 | p4)
@@ -325,7 +334,7 @@ final class Emulator {
                 }
                 let yIndex = (yLocation + ySprite) * Emulator.pixelWidth
                 for xSprite in 0..<Emulator.spriteWidth {
-                    let xIndex = xLocation + xSprite
+                    let xIndex = xLocation + ( Emulator.spriteWidth - 1 - xSprite)
                     guard xIndex < Emulator.pixelWidth else {
                         continue
                     }
@@ -345,12 +354,12 @@ final class Emulator {
 
         case (Opcode.keyCheck, let x, Opcode.skipPressed.p3, Opcode.skipPressed.p4):
             if key == V[x] {
-                pc += 1
+                pc += Emulator.operationStepSize
             }
 
         case (Opcode.keyCheck, let x, Opcode.skipNotPressed.p3, Opcode.skipNotPressed.p4):
             if key != V[x] {
-                pc += 1
+                pc += Emulator.operationStepSize
             }
 
         case (0xF, let x, Opcode.saveDelayTimerP3, Opcode.saveDelayTimerP4):
@@ -359,8 +368,7 @@ final class Emulator {
         case (0xF, let x, Opcode.awaitKeyP3, Opcode.awaitKeyP4):
             guard let key = key else {
                 // Blocking
-                incrementProgramCounter = false
-                break
+                return
             }
             V[x] = key
 
@@ -385,12 +393,12 @@ final class Emulator {
 
         case (0xF, let x, Opcode.registerDump.p3, Opcode.registerDump.p4):
             for i in 0...x {
-                memory[I+i] = V[i]
+                memory[I + i] = V[i]
             }
 
         case (0xF, let x, Opcode.registerLoad.p3, Opcode.registerLoad.p4):
             for i in 0...x {
-                V[i] = memory[i]
+                V[i] = memory[I + i]
             }
 
 

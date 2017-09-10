@@ -98,7 +98,7 @@ class ViewController: NSViewController {
         self.emulatorView.emulator = self.emulator
 
         // Load content
-        let rom = "Maze"
+        let rom = "Stars"
         guard let url = Bundle.main.url(forResource: rom, withExtension: "ch8") else {
             print("Can't find rom \(rom)")
             return
