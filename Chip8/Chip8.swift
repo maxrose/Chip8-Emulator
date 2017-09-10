@@ -16,6 +16,17 @@ typealias Opcode = Int
 typealias MemoryType = UInt8
 typealias Address = Int
 
+extension MemoryType {
+    func swapEndian() -> MemoryType {
+        var new: MemoryType = 0
+        let bitCount: MemoryType = 8
+        for i in 0..<bitCount {
+            new |= ((self >> (bitCount - 1 - i)) & 0b1) << i
+        }
+        return new
+    }
+}
+
 extension Int {
     static let indexAndCounterMax: Int = 0xFFF
 
@@ -410,22 +421,17 @@ final class Emulator {
             let yLocation = Int(V[y])
             V[0xF] = 0 // Set collision to false
             for ySprite in 0..<height {
-                let spriteInfo = memory[I + ySprite]
-                guard yLocation + ySprite < Emulator.pixelHeight else {
-                    continue
-                }
+                let spriteInfo = memory[I + ySprite].swapEndian()
                 let yIndex = (yLocation + ySprite) * Emulator.pixelWidth
                 for xSprite in 0..<Emulator.spriteWidth {
-                    let xIndex = xLocation + ( Emulator.spriteWidth - 1 - xSprite)
-                    guard yLocation + ySprite < Emulator.pixelHeight || xIndex < Emulator.pixelWidth else {
-                        continue
-                    }
+                    let xIndex = xLocation + xSprite
                     // Guard on sprite displaying pixel
                     guard spriteInfo >> MemoryType(xSprite) & 0b1 == 0b1 else {
                         continue
                     }
 
                     let graphicsIndex = xIndex + yIndex
+                    guard graphicsIndex < gfx.count else { continue }
                     if gfx[graphicsIndex] {
                         V[0xF] = 1 // Record collision
                     }
