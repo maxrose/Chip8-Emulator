@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import Cocoa // For beep
 
 // Emulator based on spec here: https://en.wikipedia.org/wiki/CHIP-8
 
@@ -69,7 +70,7 @@ extension Int {
 
     static let setTimer: Opcode = 0x1
     static let setDelayTimer: Opcode = 0x5
-    static let setSoundTimer: Opcode = 0x6
+    static let setSoundTimer: Opcode = 0x8
 
     static let increaseIndexRegister: (p3: Opcode, p4: Opcode) = (0x1, 0xE)
     static let setFontIndexRegister: (p3: Opcode, p4: Opcode) = (0x2, 0x9)
@@ -146,18 +147,99 @@ final class Emulator {
     private(set) var delayTimer: MemoryType = 0
     private(set) var soundTimer: MemoryType = 0
 
-    private var key: MemoryType? {
-        didSet {
-            guard let key = key else {
-                return
-            }
+    struct InputKey: OptionSet, CustomStringConvertible {
+        let rawValue: UInt16
 
-            if key > 0xF {
-                print("Chip 8 emulator only has 16 keys. \(key) is a non-sensical input.")
-                self.key = nil
+        // 1, 2, 3, C
+        // 4, 5, 6, D
+        // 7, 8, 9, E
+        // A, 0, B, F
+        static let _0 = InputKey(rawValue: 0b1 << 0x0)
+        static let _1 = InputKey(rawValue: 0b1 << 0x1)
+        static let _2 = InputKey(rawValue: 0b1 << 0x2)
+        static let _3 = InputKey(rawValue: 0b1 << 0x3)
+        static let _4 = InputKey(rawValue: 0b1 << 0x4)
+        static let _5 = InputKey(rawValue: 0b1 << 0x5)
+        static let _6 = InputKey(rawValue: 0b1 << 0x6)
+        static let _7 = InputKey(rawValue: 0b1 << 0x7)
+        static let _8 = InputKey(rawValue: 0b1 << 0x8)
+        static let _9 = InputKey(rawValue: 0b1 << 0x9)
+        static let A  = InputKey(rawValue: 0b1 << 0xA)
+        static let B  = InputKey(rawValue: 0b1 << 0xB)
+        static let C  = InputKey(rawValue: 0b1 << 0xC)
+        static let D  = InputKey(rawValue: 0b1 << 0xD)
+        static let E  = InputKey(rawValue: 0b1 << 0xE)
+        static let F  = InputKey(rawValue: 0b1 << 0xF)
+
+        static let none: InputKey = []
+
+        static func readStoredValue(_ value: MemoryType) -> InputKey {
+            switch value {
+            case 0x0: return ._0
+            case 0x1: return ._1
+            case 0x2: return ._2
+            case 0x3: return ._3
+            case 0x4: return ._4
+            case 0x5: return ._5
+            case 0x6: return ._6
+            case 0x7: return ._7
+            case 0x8: return ._8
+            case 0x9: return ._9
+            case 0xA: return .A
+            case 0xB: return .B
+            case 0xC: return .C
+            case 0xD: return .D
+            case 0xE: return .E
+            case 0xF: return .F
+            default: fatalError("Chip 8 has no input corresponding to \(value)")
             }
         }
+        fileprivate var storedValue: MemoryType {
+            switch self {
+            case InputKey._0: return 0x0
+            case InputKey._1: return 0x1
+            case InputKey._2: return 0x2
+            case InputKey._3: return 0x3
+            case InputKey._4: return 0x4
+            case InputKey._5: return 0x5
+            case InputKey._6: return 0x6
+            case InputKey._7: return 0x7
+            case InputKey._8: return 0x8
+            case InputKey._9: return 0x9
+            case InputKey.A: return 0xA
+            case InputKey.B: return 0xB
+            case InputKey.C: return 0xC
+            case InputKey.D: return 0xD
+            case InputKey.E: return 0xE
+            case InputKey.F: return 0xF
+            default: fatalError("Attempted to store a multikey press into a single key press register.")
+            }
+        }
+
+        var description: String{
+            var description = ""
+            if self.contains(._0) { description += "0" }
+            if self.contains(._1) { description += "1" }
+            if self.contains(._2) { description += "2" }
+            if self.contains(._3) { description += "3" }
+            if self.contains(._4) { description += "4" }
+            if self.contains(._5) { description += "5" }
+            if self.contains(._6) { description += "6" }
+            if self.contains(._7) { description += "7" }
+            if self.contains(._8) { description += "8" }
+            if self.contains(._9) { description += "9" }
+            if self.contains(.A)  { description += "A" }
+            if self.contains(.B)  { description += "B" }
+            if self.contains(.C)  { description += "C" }
+            if self.contains(.D)  { description += "D" }
+            if self.contains(.E)  { description += "E" }
+            if self.contains(.F)  { description += "F" }
+            return description
+        }
     }
+    func pressKey(_ key: InputKey) { self.keys = key }
+    func unpressKey(_ key: InputKey) { self.keys.remove(key) }
+    private var keys: InputKey = .none
 
     static let fontCharacterStepSize = 5
     static let fontSet: [MemoryType] = [
@@ -335,7 +417,7 @@ final class Emulator {
                 let yIndex = (yLocation + ySprite) * Emulator.pixelWidth
                 for xSprite in 0..<Emulator.spriteWidth {
                     let xIndex = xLocation + ( Emulator.spriteWidth - 1 - xSprite)
-                    guard xIndex < Emulator.pixelWidth else {
+                    guard yLocation + ySprite < Emulator.pixelHeight || xIndex < Emulator.pixelWidth else {
                         continue
                     }
                     // Guard on sprite displaying pixel
@@ -353,12 +435,12 @@ final class Emulator {
             needsDraw = true
 
         case (Opcode.keyCheck, let x, Opcode.skipPressed.p3, Opcode.skipPressed.p4):
-            if key == V[x] {
+            if keys.contains(InputKey.readStoredValue(V[x])) {
                 pc += Emulator.operationStepSize
             }
 
         case (Opcode.keyCheck, let x, Opcode.skipNotPressed.p3, Opcode.skipNotPressed.p4):
-            if key != V[x] {
+            if !keys.contains(InputKey.readStoredValue(V[x])) {
                 pc += Emulator.operationStepSize
             }
 
@@ -366,11 +448,11 @@ final class Emulator {
             V[x] = delayTimer
 
         case (0xF, let x, Opcode.awaitKeyP3, Opcode.awaitKeyP4):
-            guard let key = key else {
+            guard keys != .none else {
                 // Blocking
                 return
             }
-            V[x] = key
+            V[x] = keys.storedValue
 
         case (0xF, let x, Opcode.setTimer, Opcode.setDelayTimer):
             delayTimer = V[x]
@@ -390,7 +472,6 @@ final class Emulator {
             memory[I+1] = (V[x] / 10) % 10
             memory[I+2] = V[x] % 10
 
-
         case (0xF, let x, Opcode.registerDump.p3, Opcode.registerDump.p4):
             for i in 0...x {
                 memory[I + i] = V[i]
@@ -400,8 +481,6 @@ final class Emulator {
             for i in 0...x {
                 V[i] = memory[I + i]
             }
-
-
 
         default:
             print("unknown opcode: 0x\(String(hexDigits.p1, radix: 16))\(String(hexDigits.p2, radix: 16))\(String(hexDigits.p3, radix: 16))\(String(hexDigits.p4, radix: 16))")
@@ -415,7 +494,7 @@ final class Emulator {
             delayTimer -= 1
         }
         if soundTimer > 0 {
-            Swift.print("Beep")
+            NSBeep()
             soundTimer -= 1
         }
     }

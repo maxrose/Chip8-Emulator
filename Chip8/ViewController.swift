@@ -9,6 +9,34 @@
 import Cocoa
 import QuartzCore
 
+
+private extension UInt16 {
+    static let key1: UInt16 = 18
+    static let key2: UInt16 = 19
+    static let key3: UInt16 = 20
+    static let key4: UInt16 = 21
+    static let key5: UInt16 = 23
+    static let key6: UInt16 = 22
+    static let key7: UInt16 = 26
+    static let key8: UInt16 = 28
+    static let key9: UInt16 = 25
+    static let key0: UInt16 = 29
+
+    static let keyQ: UInt16 = 12
+    static let keyW: UInt16 = 13
+    static let keyE: UInt16 = 14
+    static let keyR: UInt16 = 15
+    static let keyA: UInt16 = 0
+    static let keyS: UInt16 = 1
+    static let keyD: UInt16 = 2
+    static let keyF: UInt16 = 3
+    static let keyZ: UInt16 = 6
+    static let keyX: UInt16 = 7
+    static let keyC: UInt16 = 8
+    static let keyV: UInt16 = 9
+}
+
+
 class EmulatorView: NSView {
     weak var emulator: Emulator?
 
@@ -78,6 +106,29 @@ class EmulatorView: NSView {
 
         NSRectFillList(&onPixels, onPixels.count)
     }
+
+    override var acceptsFirstResponder: Bool { return true }
+
+    var keyInputMapping: [UInt16: Emulator.InputKey] =
+        [.key1: ._1, .key2: ._2, .key3: ._3, .key4: .C,
+         .keyQ: ._4, .keyW: ._5, .keyE: ._6, .keyR: .D,
+         .keyA: ._7, .keyS: ._8, .keyD: ._9, .keyF: .E,
+         .keyZ:  .A, .keyX: ._0, .keyC:  .B, .keyV: .F,
+         ]
+
+    override func keyDown(with event: NSEvent) {
+        guard let mappedKey = self.keyInputMapping[event.keyCode] else {
+            return
+        }
+        self.emulator?.pressKey(mappedKey)
+    }
+
+    override func keyUp(with event: NSEvent) {
+        guard let mappedKey = self.keyInputMapping[event.keyCode] else {
+            return
+        }
+        self.emulator?.unpressKey(mappedKey)
+    }
 }
 
 class ViewController: NSViewController {
@@ -98,7 +149,7 @@ class ViewController: NSViewController {
         self.emulatorView.emulator = self.emulator
 
         // Load content
-        let rom = "Stars"
+        let rom = "Rocket"
         guard let url = Bundle.main.url(forResource: rom, withExtension: "ch8") else {
             print("Can't find rom \(rom)")
             return
@@ -113,6 +164,8 @@ class ViewController: NSViewController {
 
     override func viewDidAppear() {
         super.viewDidAppear()
+
+        self.view.becomeFirstResponder()
 
         // Trigger game loop
         guard self.emulator.hasLoadedProgram else {
@@ -152,17 +205,8 @@ class ViewController: NSViewController {
         if self.emulator.needsDraw {
             self.view.needsDisplay = true
             self.view.displayIfNeeded()
+            self.emulator.needsDraw = false
         }
-        // Read input
-        // TBD
-    }
-
-    override func keyDown(with event: NSEvent) {
-        // event.keyCode
-    }
-
-    override func keyUp(with event: NSEvent) {
-        // event.keyCode
     }
 }
 

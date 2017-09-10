@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		501C56D71F64BAC600752AA4 /* Particle.ch8 in Resources */ = {isa = PBXBuildFile; fileRef = 501C56D61F64BA8400752AA4 /* Particle.ch8 */; };
 		501C56D91F64BC9900752AA4 /* Stars.ch8 in Resources */ = {isa = PBXBuildFile; fileRef = 501C56D81F64BC9900752AA4 /* Stars.ch8 */; };
+		501C56DB1F658DAF00752AA4 /* Breakout.ch8 in Resources */ = {isa = PBXBuildFile; fileRef = 501C56DA1F658DAF00752AA4 /* Breakout.ch8 */; };
+		501C56DD1F658FB400752AA4 /* Programmable Spacefighters.ch8 in Resources */ = {isa = PBXBuildFile; fileRef = 501C56DC1F658FB400752AA4 /* Programmable Spacefighters.ch8 */; };
+		501C56DF1F65903800752AA4 /* Rocket.ch8 in Resources */ = {isa = PBXBuildFile; fileRef = 501C56DE1F65903800752AA4 /* Rocket.ch8 */; };
 		509485BA1F624E4D00E944E0 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509485B91F624E4D00E944E0 /* AppDelegate.swift */; };
 		509485BC1F624E4D00E944E0 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509485BB1F624E4D00E944E0 /* ViewController.swift */; };
 		509485BE1F624E4D00E944E0 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 509485BD1F624E4D00E944E0 /* Assets.xcassets */; };
@@ -20,6 +23,9 @@
 /* Begin PBXFileReference section */
 		501C56D61F64BA8400752AA4 /* Particle.ch8 */ = {isa = PBXFileReference; lastKnownFileType = file; path = Particle.ch8; sourceTree = "<group>"; };
 		501C56D81F64BC9900752AA4 /* Stars.ch8 */ = {isa = PBXFileReference; lastKnownFileType = file; path = Stars.ch8; sourceTree = "<group>"; };
+		501C56DA1F658DAF00752AA4 /* Breakout.ch8 */ = {isa = PBXFileReference; lastKnownFileType = file; path = Breakout.ch8; sourceTree = "<group>"; };
+		501C56DC1F658FB400752AA4 /* Programmable Spacefighters.ch8 */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Programmable Spacefighters.ch8"; sourceTree = "<group>"; };
+		501C56DE1F65903800752AA4 /* Rocket.ch8 */ = {isa = PBXFileReference; lastKnownFileType = file; path = Rocket.ch8; sourceTree = "<group>"; };
 		509485B61F624E4D00E944E0 /* Chip8.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Chip8.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		509485B91F624E4D00E944E0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		509485BB1F624E4D00E944E0 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -74,6 +80,9 @@
 		509485CA1F64B43F00E944E0 /* Roms */ = {
 			isa = PBXGroup;
 			children = (
+				501C56DE1F65903800752AA4 /* Rocket.ch8 */,
+				501C56DC1F658FB400752AA4 /* Programmable Spacefighters.ch8 */,
+				501C56DA1F658DAF00752AA4 /* Breakout.ch8 */,
 				501C56D81F64BC9900752AA4 /* Stars.ch8 */,
 				501C56D61F64BA8400752AA4 /* Particle.ch8 */,
 				509485CB1F64B45600E944E0 /* Maze.ch8 */,
@@ -140,11 +149,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				501C56DD1F658FB400752AA4 /* Programmable Spacefighters.ch8 in Resources */,
 				509485BE1F624E4D00E944E0 /* Assets.xcassets in Resources */,
 				501C56D71F64BAC600752AA4 /* Particle.ch8 in Resources */,
 				501C56D91F64BC9900752AA4 /* Stars.ch8 in Resources */,
+				501C56DB1F658DAF00752AA4 /* Breakout.ch8 in Resources */,
 				509485CC1F64B45600E944E0 /* Maze.ch8 in Resources */,
 				509485C11F624E4D00E944E0 /* Main.storyboard in Resources */,
+				501C56DF1F65903800752AA4 /* Rocket.ch8 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
